@@ -49,20 +49,11 @@ int main(int argc, char* argv[]) {
         return RESULT_BAD_ARGS;
     }
     struct stat sb_1;
-    struct stat sb_2;
     if (lstat(argv[1], &sb_1) == -1) {
         perror("lstat");
         exit(EXIT_FAILURE);  
     }
-    if (lstat(argv[2], &sb_2) == -1) {
-        perror("lstat");
-        exit(EXIT_FAILURE);  
-    }
     if ((sb_1.st_mode & S_IFMT) != S_IFREG) {
-        printf("At least, one of files is not regular!\n");
-        return -1;
-    }
-    if ((sb_2.st_mode & S_IFMT) != S_IFREG) {
         printf("At least, one of files is not regular!\n");
         return -1;
     }
@@ -101,7 +92,7 @@ int main(int argc, char* argv[]) {
     }
     FILE* filestream_1 = fdopen(fd_1, "r");
     if (filestream_1 == NULL) {
-        fprintf(stderr, "Error: cannot connect filestream with existing file descriptor of the first file '%s'\n", argv[1]);
+        fprintf(stderr, "Error: cannot connect filestream_1 with existing file descriptor of the first file '%s'\n", argv[1]);
         return -1;
     }
     fseek(filestream_1, 0, SEEK_END);
@@ -138,6 +129,15 @@ int main(int argc, char* argv[]) {
         return RESULT_ERROR_CLOSING_FILE;
     }
     int fd_2 = open(argv[2], O_WRONLY | O_CREAT, ALLPERMS);
+    struct stat sb_2;
+    if (lstat(argv[2], &sb_2) == -1) {
+        perror("lstat");
+        exit(EXIT_FAILURE);  
+    }
+    if ((sb_2.st_mode & S_IFMT) != S_IFREG) {
+        printf("At least, one of files is not regular!\n");
+        return -1;
+    }
     if (fd_2 < 0) {
         fprintf(stderr, "Error: cannot open the second file '%s'\n", argv[2]);
         printf("Name of error: ");
@@ -171,6 +171,12 @@ int main(int argc, char* argv[]) {
         free(buffer);
         return RESULT_ERROR_OPENING_FILE;
     }
+    FILE* filestream_2 = fdopen(fd_2, "w");
+    if (filestream_2 == NULL) {
+        fprintf(stderr, "Error: cannot connect filestream_2 with existing file descriptor of the second file '%s'\n", argv[1]);
+        return -1;
+    }
+    fseek(filestream_2, 0, SEEK_SET);
     if (write_all(fd_2, buffer, strlen(buffer)) < 0) {
         fprintf(stderr, "Error: cannot write to the second file '%s'\n", argv[2]);
         printf("Name of error: ");
@@ -188,6 +194,18 @@ int main(int argc, char* argv[]) {
         }
         free(buffer);
         return RESULT_ERROR_WRITING_IN_FILE;
+    }
+    if (close(fd_2) < 0) {
+        fprintf(stderr, "Error: cannot close the second file '%s'\n", argv[2]);
+        printf("Name of error: ");
+        switch(errno) {
+            case 9:  printf("EBADF\n");       break;
+            case 4:  printf("EINTR\n");       break;
+            case 5:  printf("EIO\n");         break;
+            default: printf("unknown\n");     break;
+        }
+        free(buffer);
+        return RESULT_ERROR_CLOSING_FILE;
     }
     printf("Data has been successfully copied from the first regular file to the second one!\n");
     free(buffer);
