@@ -31,7 +31,7 @@ ssize_t read_all(int fd, void *buf, size_t count) {
 }
 
 ssize_t write_all(int fd, const void *buf, size_t count) {
-    size_t bytes_written = 0;
+    size_t bytes_written = 0; 
     const uint8_t *buf_addr = buf;
     while (bytes_written < count) {
         ssize_t res = write(fd, buf_addr + bytes_written, count - bytes_written); 
