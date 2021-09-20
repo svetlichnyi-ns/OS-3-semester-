@@ -45,7 +45,7 @@ ssize_t write_all(int fd, const void *buf, size_t count) {
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Error: bad arguments!\n");
-        fprintf(stderr, "Usage: <name_of_regular_file_where_you_want_to_copy_from> <name_of_regular_file_where_you_want_to_copy_in>\n");
+        fprintf(stderr, "Usage: %s <name_of_regular_file_where_you_want_to_copy_from> <name_of_regular_file_where_you_want_to_copy_in>\n", argv[0]);
         return RESULT_BAD_ARGS;
     }
     struct stat sb_1;
