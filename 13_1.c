@@ -25,7 +25,7 @@ int main(void) {
     else {                         /* this code is executed in the parent process only */
         proc_info("parent");
         int status;
-        pid_t id = waitpid(-1, &status, WNOHANG | WUNTRACED | WCONTINUED);
+        pid_t id = waitpid(-1, &status, WUNTRACED | WCONTINUED);
         if (id == -1) {
             perror("waitpid");
             return -1;
