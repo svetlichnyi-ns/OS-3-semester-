@@ -33,8 +33,13 @@ int main(void) {
         printf("PID of a child process, whose state changed: %d\n", id);
         if (WIFEXITED(status))
             printf("The child process terminated normally, with the exit status %d\n", WEXITSTATUS(status));
-        else if (WIFSIGNALED(status)) 
+        else if (WIFSIGNALED(status)) {
             printf("The child process was killed by signal %d\n", WTERMSIG(status));
+            #ifdef WCOREDUMP
+            if (WCOREDUMP(status))
+                printf("The child process caused a core dump\n");
+            #endif
+        }
         else if (WIFSTOPPED(status))
             printf("The child process was stopped by signal %d\n", WSTOPSIG(status));
         else if (WIFCONTINUED(status))
