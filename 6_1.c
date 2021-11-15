@@ -48,7 +48,7 @@ char mode_char (unsigned mode) {
 }
 
 int main(void) {
-    DIR *dir_fd = opendir("arr.txt");
+    DIR *dir_fd = opendir(".");
     if (dir_fd == NULL) {
         perror("opendir");
         return 1;
