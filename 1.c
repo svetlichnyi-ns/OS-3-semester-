@@ -1,16 +1,16 @@
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <time.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/sysmacros.h>
 #include <math.h>
-
-#define _GNU_SOURCE
+#include <time.h>
+#include <dirent.h>
 
 const char* file_type(unsigned long int mode) {
     if (S_ISREG (mode))
@@ -55,19 +55,25 @@ int main(int argc, char* argv[]) {
     }
     char access_to_file[sizeof("rwxrwxrwx")] = {};
     access_mode(statbuf.st_mode, access_to_file);
-    printf("Name of file:               %s\n", argv[1]);
-    printf("ID of containing device:    [%jx, %jx]\n", (long) major (statbuf.st_dev), (long) minor (statbuf.st_dev));
-    printf("I-node number:              %ju\n", statbuf.st_ino);
-    printf("Type of file:               %s\n", file_type(statbuf.st_mode));
-    printf("Access mode:                %s\n", access_to_file);
-    printf("Link count:                 %ju\n", statbuf.st_nlink);
-    printf("UID:                        %ju\n", (long) statbuf.st_uid);
-    printf("GID:                        %ju\n", (long) statbuf.st_gid);
-    printf("Preferred I/O block size:   %jd bytes\n", statbuf.st_blksize);
-    printf("File size:                  %jd bytes\n", statbuf.st_size);
-    printf("Blocks allocated:           %jd\n", statbuf.st_blocks);
-    printf("Last status change:         %s", ctime(&statbuf.st_ctime));
-    printf("Last file access:           %s", ctime(&statbuf.st_atime));
-    printf("Last file modification:     %s", ctime(&statbuf.st_mtime));
+    struct statx sbx;
+    if (statx(AT_FDCWD, argv[1], AT_SYMLINK_NOFOLLOW, STATX_ATIME | STATX_BTIME | STATX_CTIME | STATX_MTIME, &sbx) == -1) {
+        perror("statx");
+        return 1;
+    }
+    printf("Name of file:                %s\n", argv[1]);
+    printf("ID of containing device:     [%jx, %jx]\n", (long) major (statbuf.st_dev), (long) minor (statbuf.st_dev));
+    printf("I-node number:               %ju\n", statbuf.st_ino);
+    printf("Type of file:                %s\n", file_type(statbuf.st_mode));
+    printf("Access mode:                 %s\n", access_to_file);
+    printf("Link count:                  %ju\n", statbuf.st_nlink);
+    printf("UID:                         %ju\n", (long) statbuf.st_uid);
+    printf("GID:                         %ju\n", (long) statbuf.st_gid);
+    printf("Preferred I/O block size:    %jd bytes\n", statbuf.st_blksize);
+    printf("File size:                   %jd bytes\n", statbuf.st_size);
+    printf("Blocks allocated:            %jd\n", statbuf.st_blocks);
+    printf("Birth time:                  %s", asctime(localtime((const time_t *) &(sbx.stx_btime.tv_sec)))); 
+    printf("Last status change time:     %s", asctime(localtime((const time_t *) &(sbx.stx_ctime.tv_sec)))); 
+    printf("Last file access time:       %s", asctime(localtime((const time_t *) &(sbx.stx_atime.tv_sec)))); 
+    printf("Last file modification time: %s", asctime(localtime((const time_t *) &(sbx.stx_mtime.tv_sec)))); 
     return 0;
 }
