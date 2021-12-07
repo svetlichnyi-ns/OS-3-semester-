@@ -86,10 +86,12 @@ int main(int argc, char* argv[]) {
     struct stat sb_2;
     if (lstat(argv[2], &sb_2) == -1) {
         perror("lstat");
+        free(buffer);
         exit(EXIT_FAILURE);  
     }
     if ((sb_2.st_mode & S_IFMT) != S_IFREG) {
         printf("At least, one of files is not regular!\n");
+        free(buffer);
         return -1;
     }
     if (fd_2 < 0) {
@@ -100,6 +102,7 @@ int main(int argc, char* argv[]) {
     FILE* filestream_2 = fdopen(fd_2, "w");
     if (filestream_2 == NULL) {
         fprintf(stderr, "Error: cannot connect filestream_2 with existing file descriptor of the second file '%s'\n", argv[1]);
+        free(buffer);
         return -1;
     }
     fseek(filestream_2, 0, SEEK_SET);
