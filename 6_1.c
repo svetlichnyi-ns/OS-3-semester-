@@ -22,8 +22,8 @@ char d_type_char (unsigned char d_type) {
     return '?';
 }
 
-char type_char (unsigned type) {
-    switch (type & S_IFMT) {
+char mode_char (unsigned mode) {
+    switch (mode & S_IFMT) {
         case S_IFBLK:     return 'b'; break;
         case S_IFCHR:     return 'c'; break;
         case S_IFDIR:     return 'd'; break;
@@ -50,7 +50,7 @@ int main(void) {
                 perror("statx");
                 return -1;
             }
-            entry_type = type_char(sbx.stx_mode);
+            entry_type = mode_char(sbx.stx_mode);
         }
         printf("%c %s\n", entry_type, entry->d_name); 
     }
