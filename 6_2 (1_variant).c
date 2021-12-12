@@ -6,7 +6,7 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <errno.h>
+#include <errno.h> 
 
 char d_type_char (unsigned char d_type) {   // this function identificates type of file, using field "d_type" of the struct dirent, filled in by function "readdir"
     switch (d_type) {
