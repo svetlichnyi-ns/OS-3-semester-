@@ -59,8 +59,8 @@ int analyze_dir(const int fd_of_dir, unsigned char level) {  // this function, c
                 printf("%d ", j);
             printf("%s\n", entry->d_name);
             if (entry_type == 'd') {   // if the handled entry is a directory...
-                int interior_dirfd = openat(fd_of_dir, entry->d_name, O_RDONLY | O_DIRECTORY);   // descriptor of a nesting directory
-                if (interior_dirfd == -1) {
+                int fd_of_interior_dir = openat(fd_of_dir, entry->d_name, O_RDONLY | O_DIRECTORY);   // descriptor of a nesting directory
+                if (fd_of_interior_dir == -1) {
                     perror("openat");
                     return -1;
                 }
