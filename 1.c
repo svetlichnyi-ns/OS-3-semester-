@@ -12,6 +12,17 @@
 #include <time.h>
 #include <dirent.h>
 
+#ifdef S_BLKSIZE
+    #define BL_SIZE S_BLKSIZE
+    #else
+        #include <sys/param.h>
+        #ifdef DEV_BSIZE
+            #define BL_SIZE DEV_BSIZE
+        #else
+            #error "Failed to determine block size"
+        #endif
+#endif
+
 const char* file_type(unsigned long int mode) {
     if (S_ISREG (mode))
         return "regular file";
@@ -68,7 +79,7 @@ int main(int argc, char* argv[]) {
     printf("Link count:                  %ju\n", statbuf.st_nlink);
     printf("UID:                         %ju\n", (long) statbuf.st_uid);
     printf("GID:                         %ju\n", (long) statbuf.st_gid);
-    printf("Preferred I/O block size:    %jd bytes\n", statbuf.st_blksize);
+    printf("Preferred I/O block size:    %jd bytes\n", (long int) BL_SIZE);
     printf("File size:                   %jd bytes\n", statbuf.st_size);
     printf("Blocks allocated:            %jd\n", statbuf.st_blocks);
     printf("Birth time:                  %s", asctime(localtime((const time_t *) &(sbx.stx_btime.tv_sec)))); 
