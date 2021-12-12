@@ -79,7 +79,8 @@ int main(int argc, char* argv[]) {
     printf("Link count:                  %ju\n", statbuf.st_nlink);
     printf("UID:                         %ju\n", (long) statbuf.st_uid);
     printf("GID:                         %ju\n", (long) statbuf.st_gid);
-    printf("Preferred I/O block size:    %jd bytes\n", (long int) BL_SIZE);
+    printf("Preferred I/O block size:    %jd bytes\n", statbuf.st_blksize);
+    printf("Real block size:             %jd bytes\n", (long int) BL_SIZE);
     printf("File size:                   %jd bytes\n", statbuf.st_size);
     printf("Blocks allocated:            %jd\n", statbuf.st_blocks);
     printf("Birth time:                  %s", asctime(localtime((const time_t *) &(sbx.stx_btime.tv_sec)))); 
