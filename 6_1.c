@@ -22,8 +22,8 @@ char d_type_char (unsigned char d_type) {
     return '?';
 }
 
-char mode_char (unsigned mode) {
-    switch (mode & S_IFMT) {
+char type_char (unsigned type) {
+    switch (type & S_IFMT) {
         case S_IFBLK:     return 'b'; break;
         case S_IFCHR:     return 'c'; break;
         case S_IFDIR:     return 'd'; break;
@@ -39,18 +39,18 @@ int main(void) {
     DIR* dir_stream = opendir(".");
     if (dir_stream == NULL) {
         perror("opendir");
-        return 1;
+        return -1;
     }
     struct dirent* entry;
+    struct statx sbx;
     while ((entry = readdir(dir_stream)) != NULL) {
-        struct statx sbx;
         char entry_type = d_type_char(entry->d_type);
         if (entry_type == '?') {
             if (statx(dirfd(dir_stream), entry->d_name, AT_SYMLINK_NOFOLLOW, STATX_TYPE, &sbx) == -1) {
                 perror("statx");
-                return 1;
+                return -1;
             }
-            entry_type = mode_char(sbx.stx_mode);
+            entry_type = type_char(sbx.stx_mode);
         }
         printf("%c %s\n", entry_type, entry->d_name); 
     }
