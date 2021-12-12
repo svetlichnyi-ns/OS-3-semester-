@@ -41,7 +41,6 @@ int main(void) {
         perror("opendir");
         return 1;
     }
-    // int fd = dirfd(dir_stream); // файловый дескриптор каталога
     struct dirent* entry;
     while ((entry = readdir(dir_stream)) != NULL) {
         struct statx sbx;
