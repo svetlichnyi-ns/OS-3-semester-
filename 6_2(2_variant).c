@@ -6,10 +6,10 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <time.h>
+#include <errno.h>
 
-char dtype_char (unsigned char dtype) {
-    switch (dtype) {
+char d_type_char (unsigned char d_type) {   // this function identificates type of file, using field "d_type" of the struct dirent, filled in by function "readdir"
+    switch (d_type) {
         case DT_BLK:     return 'b'; break;
         case DT_CHR:     return 'c'; break;
         case DT_DIR:     return 'd'; break;
@@ -17,24 +17,12 @@ char dtype_char (unsigned char dtype) {
         case DT_LNK:     return 'l'; break;
         case DT_REG:     return 'r'; break;
         case DT_SOCK:    return 's'; break;
-        default:         return '?'; break;
+        case DT_UNKNOWN: return '?'; break;
     }
     return '?';
 }
 
-void access_mode(unsigned long int mode, char* access) {
-    access[0] = (mode & S_IRUSR) ? 'r' : '-';
-    access[1] = (mode & S_IWUSR) ? 'w' : '-';
-    access[2] = (mode & S_IXUSR) ? 'x' : '-';
-    access[3] = (mode & S_IRGRP) ? 'r' : '-';
-    access[4] = (mode & S_IWGRP) ? 'w' : '-';
-    access[5] = (mode & S_IXGRP) ? 'x' : '-';
-    access[6] = (mode & S_IROTH) ? 'r' : '-';
-    access[7] = (mode & S_IWOTH) ? 'w' : '-';
-    access[8] = (mode & S_IXOTH) ? 'x' : '-';   
-}
-
-char mode_char (unsigned mode) {
+char mode_char (unsigned mode) {   // this function identificates type of file, using field "stx_mode" of the struct statx, filled in by function "statx"
     switch (mode & S_IFMT) {
         case S_IFBLK:     return 'b'; break;
         case S_IFCHR:     return 'c'; break;
@@ -50,33 +38,28 @@ char mode_char (unsigned mode) {
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <directory-to-investigate>\n", argv[0]);
-        return 1;
+        return -1;
     }
-    DIR *dir_fd = opendir(argv[1]);
-    if (dir_fd == NULL) {
+    DIR* dir_stream = opendir(argv[1]);   // get a pointer to the stream of the directory, entered by user in a command line
+    if (dir_stream == NULL) {
         perror("opendir");
-        return 1;
+        return -1;
     }
-    int fd = dirfd(dir_fd); // файловый дескриптор каталога
-    struct dirent *entry;
-    while ((entry = readdir(dir_fd)) != NULL) {
-        struct stat sb;
-        struct statx sbx;
-        char entry_type = dtype_char(entry->d_type);
-        char access_to_file[sizeof("rwxrwxrwx")] = {};
-        if (fstatat(fd, entry->d_name, &sb, AT_SYMLINK_NOFOLLOW) == -1) {
-            perror("fstatat");
-            return 1;
+    struct dirent* entry;
+    struct statx sbx;
+    while ((entry = readdir(dir_stream)) != NULL) {  // if the directory has not ended yet...
+        /* Function "readdir" may also return a zero pointer if directory stream descriptor is invalid. 
+        But we are sure in its validity, because we've already handled possible errors, returned by "opendir" */ 
+        char entry_type = d_type_char(entry->d_type);
+        if (entry_type == '?') {   // if field "d_type" didn't provide us with information about filetype, we use statx(2)
+            if (statx(dirfd(dir_stream), entry->d_name, AT_SYMLINK_NOFOLLOW, STATX_TYPE, &sbx) == -1) {
+                perror("statx");
+                return -1;
+            }
+            entry_type = mode_char(sbx.stx_mode);
         }
-        if (entry_type == '?')
-            entry_type = mode_char(sb.st_mode);
-        access_mode(sb.st_mode, access_to_file);
-        if (statx(fd, entry->d_name, AT_SYMLINK_NOFOLLOW, STATX_ALL, &sbx) == -1) {
-            perror("statx");
-            return 1;
-        }
-        printf("%s %c %s %s\n", access_to_file, entry_type, asctime(localtime((const time_t *) &(sbx.stx_btime.tv_sec))), entry->d_name); 
+        printf("%c %s\n", entry_type, entry->d_name); 
     }
-    closedir(dir_fd);
+    closedir(dir_stream); // errors are also impossible here
     return 0;
 }
