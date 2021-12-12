@@ -9,6 +9,12 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
+#ifdef BUFSIZ
+    #define BUF_SIZE BUFSIZ
+#else
+    #define BUF_SIZE 1024
+#endif
+
 struct linux_dirent {
     unsigned long  d_ino;     // inode number
     unsigned long  d_off;     // offset to next linux_dirent structure
@@ -43,13 +49,13 @@ char mode_char (unsigned mode) {   // this function identificates type of file, 
     }
 }
 
-int main(int argc, char *argv[]) {
-    int nread; // the number of bytes read
-    char buf[BUFSIZ];  // an intermediate buffer for reading from the directory
+int main (int argc, char *argv[]) {
+    int nread;                  // the number of bytes read
+    char buf[BUF_SIZE];         // an intermediate buffer for reading from the directory
     struct linux_dirent *entry;
-    int bpos;  // current position in buffer
+    int bpos;                   // current position in buffer
     char d_type;
-    struct stat sb;
+    struct stat sb;             // if field "char d_type" in struct linux_dirent will be unsuccessful in providing us with data about filetype, we'll use "fstatat(2)"
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <directory-to-investigate>\n", argv[0]);
@@ -62,24 +68,23 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    while (1) {
-        nread = syscall(SYS_getdents, dirfd(dir_stream), buf, BUFSIZ);
+    while (1) {  // the cycle will end, if an error occurs or when we reach the end of directory
+        nread = syscall(SYS_getdents, dirfd(dir_stream), buf, BUF_SIZE);
         if (nread == -1) {
             perror("getdents");
             closedir(dir_stream);
             return -1;
         }
 
-        if (nread == 0) {   // we reached the end of directory
+        if (nread == 0)  // if we reached the end of directory...
             break;
-        }
 
         for (bpos = 0; bpos < nread;) {
-            entry = (struct linux_dirent *) (buf + bpos);
-            d_type = *(buf + bpos + entry->d_reclen - 1);  // char, responsible for file type
+            entry = (struct linux_dirent *) (buf + bpos);  // we handle a new entry in a directory
+            d_type = *(buf + bpos + entry->d_reclen - 1);  // char, which is responsible for filetype
             if (d_type_char(d_type) != '?')
                 printf("%c ", d_type_char(d_type));
-            else {   // if this char can not provide us with information about filetype, we use fstatat(2)
+            else {    // if this char can not provide us with information about filetype, we use "fstatat(2)"
                 if (fstatat(dirfd(dir_stream), entry->d_name, &sb, AT_SYMLINK_NOFOLLOW) == -1) {
                     perror("fstatat");
                     return -1;
@@ -87,7 +92,7 @@ int main(int argc, char *argv[]) {
                 printf("%c ", mode_char(sb.st_mode));
             }
             printf("%s\n", (char *) entry->d_name);
-            bpos += entry->d_reclen;   // we add to "bpos" the length of the current structure. We're ready to handle the next directory's entry
+            bpos += entry->d_reclen;   // we add to "bpos" the length of the current structure. Now we're ready to handle the next directory's entry
         }
     }
     if (closedir(dir_stream) == -1) {
