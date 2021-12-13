@@ -4,7 +4,6 @@
 #include <sys/stat.h>  // for flags S_IXXX
 #include <fcntl.h>     // for syscall open() and flags O_XXX
 #include <unistd.h>    // for syscalls read() and close()
-#include <errno.h>     // for the integer variable "errno"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,7 +81,7 @@ int main(int argc, char* argv[]) {
         free(buffer);
         return RESULT_ERROR_CLOSING_FILE;
     }
-    int fd_2 = open(argv[2], O_WRONLY | O_CREAT, ALLPERMS);
+    int fd_2 = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, ALLPERMS);
     struct stat sb_2;
     if (lstat(argv[2], &sb_2) == -1) {
         perror("lstat");
