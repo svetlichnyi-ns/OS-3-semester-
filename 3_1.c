@@ -4,6 +4,7 @@
 #include <sys/stat.h>  // for flags S_IXXX
 #include <fcntl.h>     // for syscall open() and flags O_XXX
 #include <unistd.h>    // for syscalls read() and close()
+#include <errno.h>     // for the integer variable "errno"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,10 +23,8 @@ ssize_t read_all(int fd, void *buf, size_t count) {
     uint8_t *buf_addr = buf;
     while (read_bytes < count) {
         ssize_t res = read(fd, buf_addr + read_bytes, count - read_bytes);
-        if (res < 0) {
-            perror("read");
+        if (res < 0)
             return res;
-        }
         read_bytes = read_bytes + (size_t) res;
     }
     return (ssize_t) read_bytes;
@@ -36,10 +35,8 @@ ssize_t write_all(int fd, const void *buf, size_t count) {
     const uint8_t *buf_addr = buf;
     while (bytes_written < count) {
         ssize_t res = write(fd, buf_addr + bytes_written, count - bytes_written); 
-        if (res < 0) {
-            perror("write");
+        if (res < 0)
             return res;
-        }
         bytes_written = bytes_written + (size_t) res;
     }
     return (ssize_t) bytes_written;
@@ -52,11 +49,11 @@ int main(int argc, char* argv[]) {
         return RESULT_BAD_ARGS;
     }
     struct stat sb_1;
-    if (fstatat(AT_FDCWD, argv[1], &sb_1, AT_SYMLINK_NOFOLLOW) == -1) {
-        perror("fstatat");
+    if (lstat(argv[1], &sb_1) == -1) {
+        perror("lstat");
         exit(EXIT_FAILURE);  
     }
-    if (!S_ISREG(sb.st_mode))
+    if ((sb_1.st_mode & S_IFMT) != S_IFREG) {
         printf("At least, one of files is not regular!\n");
         return -1;
     }
@@ -85,7 +82,7 @@ int main(int argc, char* argv[]) {
         free(buffer);
         return RESULT_ERROR_CLOSING_FILE;
     }
-    int fd_2 = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, ALLPERMS);
+    int fd_2 = open(argv[2], O_WRONLY | O_CREAT, ALLPERMS);
     struct stat sb_2;
     if (lstat(argv[2], &sb_2) == -1) {
         perror("lstat");
