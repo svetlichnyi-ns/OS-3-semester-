@@ -23,6 +23,19 @@
         #endif
 #endif
 
+char* my_time (struct timespec* time) {
+    struct tm* ttime = localtime(&(time->tv_sec));
+    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS")];
+    char tz_str[sizeof("+hhmm")];
+    strftime(yyyymmdd_hhmmss, sizeof(yyyymmdd_hhmmss), "%F %T", ttime);
+    strftime(tz_str, sizeof(tz_str), "%z", ttime);
+    char* result;
+    if (asprintf(&result, "%s.%09ld %s", yyyymmdd_hhmmss, time->tv_nsec, tz_str) < 0) {
+        return NULL;
+    }
+    return result;
+}
+
 const char* file_type(unsigned long int mode) {
     if (S_ISREG (mode))
         return "regular file";
@@ -66,11 +79,6 @@ int main(int argc, char* argv[]) {
     }
     char access_to_file[sizeof("rwxrwxrwx")] = {};
     access_mode(statbuf.st_mode, access_to_file);
-    struct statx sbx;
-    if (statx(AT_FDCWD, argv[1], AT_SYMLINK_NOFOLLOW, STATX_ATIME | STATX_BTIME | STATX_CTIME | STATX_MTIME, &sbx) == -1) {
-        perror("statx");
-        return 1;
-    }
     printf("Name of file:                %s\n", argv[1]);
     printf("ID of containing device:     [%jx, %jx]\n", (long) major (statbuf.st_dev), (long) minor (statbuf.st_dev));
     printf("I-node number:               %ju\n", statbuf.st_ino);
@@ -83,9 +91,9 @@ int main(int argc, char* argv[]) {
     printf("Real block size:             %jd bytes\n", (long int) BL_SIZE);
     printf("File size:                   %jd bytes\n", statbuf.st_size);
     printf("Blocks allocated:            %jd\n", statbuf.st_blocks);
-    printf("Birth time:                  %s", asctime(localtime((const time_t *) &(sbx.stx_btime.tv_sec)))); 
-    printf("Last status change time:     %s", asctime(localtime((const time_t *) &(sbx.stx_ctime.tv_sec)))); 
-    printf("Last file access time:       %s", asctime(localtime((const time_t *) &(sbx.stx_atime.tv_sec)))); 
-    printf("Last file modification time: %s", asctime(localtime((const time_t *) &(sbx.stx_mtime.tv_sec)))); 
+    tzset();
+    printf("Last access time:            %s", my_time(&(statbuf.st_atim)));
+    printf("Last file modification time: %s", my_time(&(statbuf.st_mtim))); 
+    printf("Last status change time:     %s", my_time(&(statbuf.st_ctim))); 
     return 0;
 }
