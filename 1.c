@@ -36,6 +36,20 @@ char* my_time (struct timespec* time) {
     return result;
 }
 
+char* my_birth_time (struct statx_timestamp* time) {
+    time_t* seconds = (time_t*) &(time->tv_sec);
+    struct tm* ttime = localtime(seconds);
+    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm") + 1];
+    char tz_str[sizeof("+hhmm")];
+    strftime(yyyymmdd_hhmmss, sizeof(yyyymmdd_hhmmss), "%F %T", ttime);
+    strftime(tz_str, sizeof(tz_str), "%z", ttime);
+    char* result;
+    if (asprintf(&result, "%s.%09u %s", yyyymmdd_hhmmss, time->tv_nsec, tz_str) < 0) {
+        return NULL;
+    }
+    return result;
+}
+
 const char* file_type(unsigned long int mode) {
     if (S_ISREG (mode))
         return "regular file";
@@ -77,6 +91,11 @@ int main(int argc, char* argv[]) {
         perror("fstatat");
         return -1;
     }
+    struct statx sbx;
+    if (statx(AT_FDCWD, argv[1], AT_SYMLINK_NOFOLLOW, STATX_BTIME, &sbx) == -1) {
+        perror("statx");
+        return -1;
+    }
     char access_to_file[sizeof("rwxrwxrwx")] = {};
     access_mode(statbuf.st_mode, access_to_file);
     printf("Name of file:                %s\n", argv[1]);
@@ -101,6 +120,9 @@ int main(int argc, char* argv[]) {
     free(time_string);
     time_string = my_time(&(statbuf.st_mtim));
     printf("Last file modification time: %s\n", time_string);
+    free(time_string);
+    time_string = my_birth_time(&(sbx.stx_btime));
+    printf("Birth time:                  %s\n", time_string);
     free(time_string);
     return 0;
 }
