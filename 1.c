@@ -25,7 +25,7 @@
 
 char* my_time (struct timespec* time) {
     struct tm* ttime = localtime(&(time->tv_sec));
-    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS")];
+    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm") + 1];
     char tz_str[sizeof("+hhmm")];
     strftime(yyyymmdd_hhmmss, sizeof(yyyymmdd_hhmmss), "%F %T", ttime);
     strftime(tz_str, sizeof(tz_str), "%z", ttime);
@@ -92,8 +92,15 @@ int main(int argc, char* argv[]) {
     printf("File size:                   %jd bytes\n", statbuf.st_size);
     printf("Blocks allocated:            %jd\n", statbuf.st_blocks);
     tzset();
-    printf("Last access time:            %s", my_time(&(statbuf.st_atim)));
-    printf("Last file modification time: %s", my_time(&(statbuf.st_mtim))); 
-    printf("Last status change time:     %s", my_time(&(statbuf.st_ctim))); 
+    char* time_string = (char*) calloc ((size_t) (sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm") + 1), sizeof(char));
+    time_string = my_time(&(statbuf.st_atim));
+    printf("Last access time:            %s\n", time_string);
+    free(time_string);
+    time_string = my_time(&(statbuf.st_ctim));
+    printf("Last status change time:     %s\n", time_string);
+    free(time_string);
+    time_string = my_time(&(statbuf.st_mtim));
+    printf("Last file modification time: %s\n", time_string);
+    free(time_string);
     return 0;
 }
