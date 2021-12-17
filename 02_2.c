@@ -4,7 +4,6 @@
 #include <sys/stat.h> 
 #include <fcntl.h> 
 #include <unistd.h>  
-#include <errno.h> 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +26,7 @@ int main (int argc, char* argv[]) {
         perror("open");
         return RESULT_OPEN_FAILURE;
     }
-    if (dprintf(fd, "%s", argv[2]) < 0) {
+    if (dprintf(fd, "%s\n", argv[2]) < 0) {
         perror("dprintf");
         close(fd);
         return RESULT_WRITING_FAILURE;
