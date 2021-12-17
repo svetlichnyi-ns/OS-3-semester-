@@ -4,7 +4,6 @@
 #include <sys/stat.h>  // for flags S_IXXX
 #include <fcntl.h>     // for syscall open() and flags O_XXX
 #include <unistd.h>    // for syscalls read() and close()
-#include <errno.h>     // for the integer variable "errno"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,18 +16,6 @@
 #define RESULT_ERROR_WRITING_IN_FILE 3
 #define RESULT_ERROR_CLOSING_FILE 4
 #define RESULT_ERROR_READING_FILE 5
-
-ssize_t read_all(int fd, void *buf, size_t count) {
-    size_t read_bytes = 0;
-    uint8_t *buf_addr = buf;
-    while (read_bytes < count) {
-        ssize_t res = read(fd, buf_addr + read_bytes, count - read_bytes);
-        if (res < 0)
-            return res;
-        read_bytes = read_bytes + (size_t) res;
-    }
-    return (ssize_t) read_bytes;
-}
 
 ssize_t write_all(int fd, const void *buf, size_t count) {
     size_t bytes_written = 0; 
@@ -49,11 +36,11 @@ int main(int argc, char* argv[]) {
         return RESULT_BAD_ARGS;
     }
     struct stat sb_1;
-    if (lstat(argv[1], &sb_1) == -1) {
-        perror("lstat");
+    if (fstatat(AT_FDCWD, argv[1], &sb_1, AT_SYMLINK_NOFOLLOW) == -1) {
+        perror("fstatat");
         exit(EXIT_FAILURE);  
     }
-    if ((sb_1.st_mode & S_IFMT) != S_IFREG) {
+    if (!S_ISREG(sb_1.st_mode)) {
         printf("At least, one of files is not regular!\n");
         return -1;
     }
@@ -64,14 +51,14 @@ int main(int argc, char* argv[]) {
     }
     FILE* filestream_1 = fdopen(fd_1, "r");
     if (filestream_1 == NULL) {
-        fprintf(stderr, "Error: cannot connect filestream_1 with existing file descriptor of the first file '%s'\n", argv[1]);
+        perror("fdopen");
         return -1;
     }
     fseek(filestream_1, 0, SEEK_END);
     unsigned long int size_of_file = ftell(filestream_1);
     char* buffer = (char*) calloc ((size_t) size_of_file + 1, sizeof(char));
     fseek(filestream_1, 0, SEEK_SET);
-    ssize_t read_bytes = read_all(fd_1, buffer, size_of_file);
+    ssize_t read_bytes = read(fd_1, buffer, size_of_file);
     if (read_bytes < 0) {
         perror("read");
         free(buffer);
@@ -82,14 +69,14 @@ int main(int argc, char* argv[]) {
         free(buffer);
         return RESULT_ERROR_CLOSING_FILE;
     }
-    int fd_2 = open(argv[2], O_WRONLY | O_CREAT, ALLPERMS);
+    int fd_2 = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, ALLPERMS);
     struct stat sb_2;
-    if (lstat(argv[2], &sb_2) == -1) {
-        perror("lstat");
+    if (fstatat(AT_FDCWD, argv[2], &sb_2, AT_SYMLINK_NOFOLLOW) == -1) {
+        perror("fstatat");
         free(buffer);
         exit(EXIT_FAILURE);  
     }
-    if ((sb_2.st_mode & S_IFMT) != S_IFREG) {
+    if (!S_ISREG(sb_2.st_mode)) {
         printf("At least, one of files is not regular!\n");
         free(buffer);
         return -1;
@@ -101,10 +88,11 @@ int main(int argc, char* argv[]) {
     }
     FILE* filestream_2 = fdopen(fd_2, "w");
     if (filestream_2 == NULL) {
-        fprintf(stderr, "Error: cannot connect filestream_2 with existing file descriptor of the second file '%s'\n", argv[1]);
+        perror("fdopen");
         free(buffer);
         return -1;
     }
+    printf("%ld %ld\n", strlen(buffer), size_of_file);
     fseek(filestream_2, 0, SEEK_SET);
     if (write_all(fd_2, buffer, strlen(buffer)) < 0) {
         perror("write");
