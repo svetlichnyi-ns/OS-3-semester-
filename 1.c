@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
@@ -23,28 +22,29 @@
         #endif
 #endif
 
-char* my_time (struct timespec* time) {
+char* my_time (const struct timespec* time) {
     struct tm* ttime = localtime(&(time->tv_sec));
-    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm") + 1];
-    char tz_str[sizeof("+hhmm")];
+    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm")];
+    char timezone_str[sizeof("+hhmm")];
     strftime(yyyymmdd_hhmmss, sizeof(yyyymmdd_hhmmss), "%F %T", ttime);
-    strftime(tz_str, sizeof(tz_str), "%z", ttime);
+    strftime(timezone_str, sizeof(timezone_str), "%z", ttime);
     char* result;
-    if (asprintf(&result, "%s.%09ld %s", yyyymmdd_hhmmss, time->tv_nsec, tz_str) < 0) {
+    if (asprintf(&result, "%s.%09ld %s", yyyymmdd_hhmmss, time->tv_nsec, timezone_str) < 0) {
+        perror("asprintf");
         return NULL;
     }
     return result;
 }
 
 char* my_birth_time (struct statx_timestamp* time) {
-    time_t* seconds = (time_t*) &(time->tv_sec);
-    struct tm* ttime = localtime(seconds);
-    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm") + 1];
-    char tz_str[sizeof("+hhmm")];
+    struct tm* ttime = localtime((time_t*) &(time->tv_sec));
+    char yyyymmdd_hhmmss[sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm")];
+    char timezone_str[sizeof("+hhmm")];
     strftime(yyyymmdd_hhmmss, sizeof(yyyymmdd_hhmmss), "%F %T", ttime);
-    strftime(tz_str, sizeof(tz_str), "%z", ttime);
+    strftime(timezone_str, sizeof(timezone_str), "%z", ttime);
     char* result;
-    if (asprintf(&result, "%s.%09u %s", yyyymmdd_hhmmss, time->tv_nsec, tz_str) < 0) {
+    if (asprintf(&result, "%s.%09u %s", yyyymmdd_hhmmss, time->tv_nsec, timezone_str) < 0) {
+        perror("asprintf");
         return NULL;
     }
     return result;
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
     printf("File size:                   %jd bytes\n", statbuf.st_size);
     printf("Blocks allocated:            %jd\n", statbuf.st_blocks);
     tzset();
-    char* time_string = (char*) calloc ((size_t) (sizeof("YYYY-mm-dd HH:MM:SS.mmmmmmmmm") + 1), sizeof(char));
+    char* time_string;
     time_string = my_time(&(statbuf.st_atim));
     printf("Last access time:            %s\n", time_string);
     free(time_string);
