@@ -92,7 +92,6 @@ int main(int argc, char* argv[]) {
         free(buffer);
         return -1;
     }
-    printf("%ld %ld\n", strlen(buffer), size_of_file);
     fseek(filestream_2, 0, SEEK_SET);
     if (write_all(fd_2, buffer, strlen(buffer)) < 0) {
         perror("write");
