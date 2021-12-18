@@ -37,7 +37,7 @@ int main (int argc, char* argv[]) {
             perror("statx");
             return -1;
         }
-        if ((stvfs.f_favail < 1) || ((uintmax_t) sbx.stx_size > ((uintmax_t) stvfs.f_bavail) * ((uintmax_t) stvfs.f_bsize))
+        if ((stvfs.f_favail < 1) || ((uintmax_t) sbx.stx_size > ((uintmax_t) stvfs.f_bavail) * ((uintmax_t) stvfs.f_bsize)))
             printf("The file «%s» doesn't fit to the filesystem\n", file_path);
         else 
             printf("The file «%s» fits to the filesystem\n", file_path);
