@@ -129,9 +129,9 @@ void proc_info(void) {
         if ((attributes.sched_policy == 1) || (attributes.sched_policy == 2))
             printf("Static priority: %u\n", attributes.sched_priority);
         if (attributes.sched_policy == 6) {
-            printf("Runtime:  %ju\n", attributes.sched_runtime);
-            printf("Deadline: %ju\n", attributes.sched_deadline);
-            printf("Period:   %ju\n", attributes.sched_period);
+            printf("Runtime:  %ju nanoseconds\n", attributes.sched_runtime);
+            printf("Deadline: %ju nanoseconds\n", attributes.sched_deadline);
+            printf("Period:   %ju nanoseconds\n", attributes.sched_period);
         }
     }
     return;
